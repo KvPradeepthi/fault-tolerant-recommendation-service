@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  recommendation-service:
+    build:
+      context: ./recommendation-service
+      dockerfile: Dockerfile
+    container_name: recommendation-service
+    ports:
+      - "${API_PORT}:8080"
+    environment:
+      - NODE_ENV=production
+      - API_PORT=8080
+      - USER_PROFILE_URL=http://user-profile-service:8081
+      - CONTENT_URL=http://content-service:8082
+      - TRENDING_URL=http://trending-service:8083
+    depends_on:
+      user-profile-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+      trending-service:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-profile-service:
+    build:
+      context: ./user-profile-service
+      dockerfile: Dockerfile
+    container_name: user-profile-service
+    environment:
+      - NODE_ENV=production
+      - SERVICE_PORT=8081
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  content-service:
+    build:
+      context: ./content-service
+      dockerfile: Dockerfile
+    container_name: content-service
+    environment:
+      - NODE_ENV=production
+      - SERVICE_PORT=8082
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  trending-service:
+    build:
+      context: ./trending-service
+      dockerfile: Dockerfile
+    container_name: trending-service
+    environment:
+      - NODE_ENV=production
+      - SERVICE_PORT=8083
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
